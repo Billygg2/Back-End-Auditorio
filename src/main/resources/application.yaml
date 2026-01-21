@@ -18,3 +18,9 @@ spring:
         jdbc:
           time_zone: America/Guayaquil
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+# Por motivo de desarrollo se deja la clave por defecto para su funcionamiento, pero en produccion se debe definir la variable 
+#                                                         de entorno JWT_SECRET
+jwt:
+  secret: ${JWT_SECRET:super-clave-ultra-secreta-super-larga-123456-mas-seguridad-para-jwt}
+  expiration: 3600000

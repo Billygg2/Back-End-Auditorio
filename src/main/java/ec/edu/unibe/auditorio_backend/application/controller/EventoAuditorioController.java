@@ -8,15 +8,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+import ec.edu.unibe.auditorio_backend.domain.entity.EventoAuditorio;  
+import ec.edu.unibe.auditorio_backend.domain.enums.EstadoEvento;      
+import ec.edu.unibe.auditorio_backend.domain.service.EventoAuditorioService; 
 
 @RestController
 @RequestMapping("/api/eventos")
@@ -29,60 +32,43 @@ public class EventoAuditorioController {
         this.eventoService = eventoService;
     }
 
-    // ========== ENDPOINT PARA ADMIN (VER TODOS) ==========
-    
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<EventoAuditorio>> listarTodosEventos() {
-        List<EventoAuditorio> eventos = eventoService.listarEventos();
-        return ResponseEntity.ok(eventos);
+        return ResponseEntity.ok(eventoService.listarEventos());
     }
 
-    // ========== ENDPOINTS PARA USUARIOS ==========
-    
     @PostMapping
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<?> crearEvento(@RequestBody EventoAuditorio evento) {
+    public ResponseEntity<?> crearEvento(
+            @RequestBody EventoAuditorio evento,
+            Authentication authentication) {
         try {
-            String username = obtenerUsernameAutenticado();
-            EventoAuditorio creado = eventoService.crearEvento(evento, username);
+            EventoAuditorio creado = eventoService.crearEvento(evento, authentication.getName());
             return new ResponseEntity<>(creado, HttpStatus.CREATED);
         } catch (RuntimeException e) {
-            if (e.getMessage() != null && 
-                (e.getMessage().contains("Ya existe un evento APROBADO") ||
-                 e.getMessage().contains("no está disponible"))) {
-                return ResponseEntity
-                        .status(HttpStatus.BAD_REQUEST)
-                        .body("{\"error\": \"" + e.getMessage() + "\"}");
-            }
             return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("{\"error\": \"Error interno del servidor\"}");
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", e.getMessage()));
         }
     }
 
     @GetMapping("/mis-eventos")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<List<EventoAuditorio>> listarMisEventos() {
-        String username = obtenerUsernameAutenticado();
-        List<EventoAuditorio> eventos = eventoService.listarEventosPorUsuario(username);
-        return ResponseEntity.ok(eventos);
+    public ResponseEntity<List<EventoAuditorio>> listarMisEventos(Authentication authentication) {
+        return ResponseEntity.ok(eventoService.listarEventosPorUsuario(authentication.getName()));
     }
 
-    // ========== ENDPOINTS PARA ADMINISTRADORES ==========
-    
     @GetMapping("/pendientes")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<EventoAuditorio>> listarEventosPendientes() {
-        List<EventoAuditorio> eventos = eventoService.listarEventosPorEstado(EstadoEvento.PENDIENTE);
-        return ResponseEntity.ok(eventos);
+        return ResponseEntity.ok(eventoService.listarEventosPorEstado(EstadoEvento.PENDIENTE));
     }
 
     @GetMapping("/rechazados")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<EventoAuditorio>> listarEventosRechazados() {
-        List<EventoAuditorio> eventos = eventoService.listarEventosPorEstado(EstadoEvento.RECHAZADO);
-        return ResponseEntity.ok(eventos);
+        return ResponseEntity.ok(eventoService.listarEventosPorEstado(EstadoEvento.RECHAZADO));
     }
 
     @PutMapping("/{id}/aprobar-rechazar")
@@ -90,19 +76,14 @@ public class EventoAuditorioController {
     public ResponseEntity<EventoAuditorio> aprobarRechazarEvento(
             @PathVariable Long id,
             @RequestBody AprobacionEventoDTO aprobacionDTO) {
-        EventoAuditorio evento = eventoService.aprobarRechazarEvento(id, aprobacionDTO);
-        return ResponseEntity.ok(evento);
+        return ResponseEntity.ok(eventoService.aprobarRechazarEvento(id, aprobacionDTO));
     }
 
-    // ========== ENDPOINTS PÚBLICOS O PARA TODOS ==========
-    
     @GetMapping("/aprobados")
     public ResponseEntity<List<EventoAuditorio>> listarEventosAprobados() {
-        List<EventoAuditorio> eventos = eventoService.listarEventosPorEstado(EstadoEvento.APROBADO);
-        return ResponseEntity.ok(eventos);
+        return ResponseEntity.ok(eventoService.listarEventosPorEstado(EstadoEvento.APROBADO));
     }
 
-    // NUEVO ENDPOINT PARA CALENDARIO COMPLETO
     @GetMapping("/calendario-completo")
     public ResponseEntity<Map<String, List<EventoAuditorio>>> listarEventosCalendarioCompleto(
             @RequestParam(required = false) LocalDate fechaInicio,
@@ -130,42 +111,35 @@ public class EventoAuditorioController {
         return ResponseEntity.ok(respuesta);
     }
 
-    // ========== ENDPOINTS GENERALES CON PERMISOS ==========
-    
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<EventoAuditorio> obtenerEventoPorId(@PathVariable Long id) {
-        EventoAuditorio evento = eventoService.obtenerEventoPorId(id);
-        if (!tienePermisoParaVerEvento(evento)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-        return ResponseEntity.ok(evento);
+        return ResponseEntity.ok(eventoService.obtenerEventoPorId(id));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<EventoAuditorio> actualizarEvento(
             @PathVariable Long id,
-            @RequestBody EventoAuditorio eventoActualizado) {
-        String username = obtenerUsernameAutenticado();
-        EventoAuditorio evento = eventoService.actualizarEvento(id, eventoActualizado, username);
+            @RequestBody EventoAuditorio eventoActualizado,
+            Authentication authentication) {
+        EventoAuditorio evento = eventoService.actualizarEvento(id, eventoActualizado, authentication.getName());
         return ResponseEntity.ok(evento);
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<Void> eliminarEvento(@PathVariable Long id) {
-        String username = obtenerUsernameAutenticado();
-        eventoService.eliminarEvento(id, username);
+    public ResponseEntity<Void> eliminarEvento(
+            @PathVariable Long id,
+            Authentication authentication) {
+        eventoService.eliminarEvento(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/fecha/{fecha}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<EventoAuditorio>> listarEventosPorFecha(
-            @PathVariable LocalDate fecha) {
-        List<EventoAuditorio> eventos = eventoService.listarEventosPorFecha(fecha);
-        return ResponseEntity.ok(eventos);
+    public ResponseEntity<List<EventoAuditorio>> listarEventosPorFecha(@PathVariable LocalDate fecha) {
+        return ResponseEntity.ok(eventoService.listarEventosPorFecha(fecha));
     }
 
     @GetMapping("/disponibilidad")
@@ -174,7 +148,11 @@ public class EventoAuditorioController {
             @RequestParam LocalDate fecha,
             @RequestParam String horaInicio,
             @RequestParam String horaFin) {
-        boolean disponible = eventoService.verificarDisponibilidad(fecha, horaInicio, horaFin);
+        boolean disponible = eventoService.verificarDisponibilidad(
+            fecha, 
+            LocalTime.parse(horaInicio), 
+            LocalTime.parse(horaFin)
+        );
         return ResponseEntity.ok(disponible);
     }
 
@@ -182,46 +160,14 @@ public class EventoAuditorioController {
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
     public ResponseEntity<EventoAuditorio> cancelarEvento(
             @PathVariable Long id,
-            @RequestParam(required = false) String motivo) {
-        String username = obtenerUsernameAutenticado();
-        EventoAuditorio evento = eventoService.cancelarEvento(id, motivo, username);
-        return ResponseEntity.ok(evento);
+            @RequestParam(required = false) String motivo,
+            Authentication authentication) {
+        return ResponseEntity.ok(eventoService.cancelarEvento(id, motivo, authentication.getName()));
     }
 
     @GetMapping("/proximos")
     public ResponseEntity<List<EventoAuditorio>> obtenerEventosProximos(
             @RequestParam(defaultValue = "7") int dias) {
-        List<EventoAuditorio> eventos = eventoService.obtenerEventosProximos(dias);
-        return ResponseEntity.ok(eventos);
-    }
-
-    // ========== MÉTODOS AUXILIARES PRIVADOS ==========
-    
-    private String obtenerUsernameAutenticado() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated()) {
-            return auth.getName();
-        }
-        return "anonymous";
-    }
-    
-    private boolean esAdmin() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth != null && auth.isAuthenticated()) {
-            return auth.getAuthorities().stream()
-                    .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-        }
-        return false;
-    }
-    
-    private boolean tienePermisoParaVerEvento(EventoAuditorio evento) {
-        if (esAdmin()) {
-            return true;
-        }
-        String username = obtenerUsernameAutenticado();
-        if (evento.getUsuarioSolicitante() != null) {
-            return evento.getUsuarioSolicitante().getUsername().equals(username);
-        }
-        return false;
+        return ResponseEntity.ok(eventoService.obtenerEventosProximos(dias));
     }
 }

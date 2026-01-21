@@ -1,0 +1,248 @@
+{
+  "client": "Thunder Client",
+  "collectionName": "Auditorio Backend API",
+  "dateExport": "2026-01-21T12:00:00.000Z",
+  "version": "1.1",
+  "folders": [
+    {
+      "folderName": "Autenticación",
+      "folderPath": "Autenticación",
+      "requests": [
+        {
+          "name": "1. Registrar Admin",
+          "method": "POST",
+          "url": "http://localhost:8080/auth/register",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "mode": "raw",
+            "data": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\",\n  \"role\": \"ADMIN\"\n}"
+          }
+        },
+        {
+          "name": "2. Registrar User",
+          "method": "POST",
+          "url": "http://localhost:8080/auth/register",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "mode": "raw",
+            "data": "{\n  \"username\": \"usuario1\",\n  \"password\": \"user123\",\n  \"role\": \"USER\"\n}"
+          }
+        },
+        {
+          "name": "3. Login Admin",
+          "method": "POST",
+          "url": "http://localhost:8080/auth/login",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "mode": "raw",
+            "data": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+          }
+        },
+        {
+          "name": "4. Login User",
+          "method": "POST",
+          "url": "http://localhost:8080/auth/login",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "mode": "raw",
+            "data": "{\n  \"username\": \"usuario1\",\n  \"password\": \"user123\"\n}"
+          }
+        }
+      ]
+    },
+    {
+      "folderName": "Eventos - Crear",
+      "folderPath": "Eventos - Crear",
+      "requests": [
+        {
+          "name": "5. Crear Evento (Conferencia)",
+          "method": "POST",
+          "url": "http://localhost:8080/api/eventos",
+          "headers": {
+            "Authorization": "Bearer {{TOKEN}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "mode": "raw",
+            "data": "{\n  \"nombreEvento\": \"Conferencia de Tecnología\",\n  \"descripcion\": \"Conferencia sobre innovación en software\",\n  \"fechaEvento\": \"2026-02-15\",\n  \"horaInicio\": \"09:00\",\n  \"horaFin\": \"12:00\",\n  \"numeroAsistentes\": 150,\n  \"publicoExterno\": true,\n  \"requiereRegistroPrevio\": true,\n  \"tipoDisposicion\": \"Auditorio\"\n}"
+          }
+        },
+        {
+          "name": "5b. Crear Evento (Seminario)",
+          "method": "POST",
+          "url": "http://localhost:8080/api/eventos",
+          "headers": {
+            "Authorization": "Bearer {{TOKEN}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "mode": "raw",
+            "data": "{\n  \"nombreEvento\": \"Seminario de Gestión\",\n  \"descripcion\": \"Seminario avanzado de gestión empresarial\",\n  \"fechaEvento\": \"2026-02-20\",\n  \"horaInicio\": \"14:00\",\n  \"horaFin\": \"17:00\",\n  \"numeroAsistentes\": 80,\n  \"publicoExterno\": false,\n  \"requiereRegistroPrevio\": false,\n  \"tipoDisposicion\": \"Sala de Conferencias\"\n}"
+          }
+        }
+      ]
+    },
+    {
+      "folderName": "Eventos - Listar",
+      "folderPath": "Eventos - Listar",
+      "requests": [
+        {
+          "name": "6. Mis Eventos (USER/ADMIN)",
+          "method": "GET",
+          "url": "http://localhost:8080/api/eventos/mis-eventos",
+          "headers": {
+            "Authorization": "Bearer {{TOKEN}}"
+          }
+        },
+        {
+          "name": "7. Obtener Evento por ID",
+          "method": "GET",
+          "url": "http://localhost:8080/api/eventos/1",
+          "headers": {
+            "Authorization": "Bearer {{TOKEN}}"
+          }
+        },
+        {
+          "name": "8. Listar TODOS los eventos (ADMIN)",
+          "method": "GET",
+          "url": "http://localhost:8080/api/eventos",
+          "headers": {
+            "Authorization": "Bearer {{ADMIN_TOKEN}}"
+          }
+        },
+        {
+          "name": "9. Listar PENDIENTES (ADMIN)",
+          "method": "GET",
+          "url": "http://localhost:8080/api/eventos/pendientes",
+          "headers": {
+            "Authorization": "Bearer {{ADMIN_TOKEN}}"
+          }
+        },
+        {
+          "name": "10. Listar RECHAZADOS (ADMIN)",
+          "method": "GET",
+          "url": "http://localhost:8080/api/eventos/rechazados",
+          "headers": {
+            "Authorization": "Bearer {{ADMIN_TOKEN}}"
+          }
+        },
+        {
+          "name": "11. Listar APROBADOS (Público)",
+          "method": "GET",
+          "url": "http://localhost:8080/api/eventos/aprobados"
+        },
+        {
+          "name": "18. Eventos Próximos (Público)",
+          "method": "GET",
+          "url": "http://localhost:8080/api/eventos/proximos?dias=30"
+        },
+        {
+          "name": "19. Calendario Completo (Público)",
+          "method": "GET",
+          "url": "http://localhost:8080/api/eventos/calendario-completo"
+        },
+        {
+          "name": "19b. Calendario con Rango de Fechas",
+          "method": "GET",
+          "url": "http://localhost:8080/api/eventos/calendario-completo?fechaInicio=2026-02-01&fechaFin=2026-02-28"
+        }
+      ]
+    },
+    {
+      "folderName": "Eventos - Actualizar",
+      "folderPath": "Eventos - Actualizar",
+      "requests": [
+        {
+          "name": "12. Aprobar Evento (ADMIN)",
+          "method": "PUT",
+          "url": "http://localhost:8080/api/eventos/1/aprobar-rechazar",
+          "headers": {
+            "Authorization": "Bearer {{ADMIN_TOKEN}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "mode": "raw",
+            "data": "{\n  \"estado\": \"APROBADO\",\n  \"motivoRechazo\": null\n}"
+          }
+        },
+        {
+          "name": "12b. Rechazar Evento (ADMIN)",
+          "method": "PUT",
+          "url": "http://localhost:8080/api/eventos/1/aprobar-rechazar",
+          "headers": {
+            "Authorization": "Bearer {{ADMIN_TOKEN}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "mode": "raw",
+            "data": "{\n  \"estado\": \"RECHAZADO\",\n  \"motivoRechazo\": \"No hay disponibilidad en esa fecha\"\n}"
+          }
+        },
+        {
+          "name": "13. Actualizar Evento (USER/ADMIN)",
+          "method": "PUT",
+          "url": "http://localhost:8080/api/eventos/1",
+          "headers": {
+            "Authorization": "Bearer {{TOKEN}}",
+            "Content-Type": "application/json"
+          },
+          "body": {
+            "mode": "raw",
+            "data": "{\n  \"nombreEvento\": \"Conferencia de Tecnología (Actualizada)\",\n  \"descripcion\": \"Nueva descripción mejorada\",\n  \"fechaEvento\": \"2026-02-16\",\n  \"horaInicio\": \"10:00\",\n  \"horaFin\": \"13:00\",\n  \"numeroAsistentes\": 200,\n  \"publicoExterno\": true,\n  \"requiereRegistroPrevio\": false,\n  \"tipoDisposicion\": \"Auditorio Principal\"\n}"
+          }
+        },
+        {
+          "name": "15. Cancelar Evento (USER/ADMIN)",
+          "method": "PUT",
+          "url": "http://localhost:8080/api/eventos/1/cancelar?motivo=Cambio de planes",
+          "headers": {
+            "Authorization": "Bearer {{TOKEN}}"
+          }
+        }
+      ]
+    },
+    {
+      "folderName": "Eventos - Eliminar y Verificar",
+      "folderPath": "Eventos - Eliminar y Verificar",
+      "requests": [
+        {
+          "name": "14. Verificar Disponibilidad",
+          "method": "GET",
+          "url": "http://localhost:8080/api/eventos/disponibilidad?fecha=2026-02-15&horaInicio=14:00&horaFin=16:00",
+          "headers": {
+            "Authorization": "Bearer {{TOKEN}}"
+          }
+        },
+        {
+          "name": "16. Eliminar Evento (USER/ADMIN)",
+          "method": "DELETE",
+          "url": "http://localhost:8080/api/eventos/1",
+          "headers": {
+            "Authorization": "Bearer {{TOKEN}}"
+          }
+        },
+        {
+          "name": "17. Listar por Fecha Específica (ADMIN)",
+          "method": "GET",
+          "url": "http://localhost:8080/api/eventos/fecha/2026-02-15",
+          "headers": {
+            "Authorization": "Bearer {{ADMIN_TOKEN}}"
+          }
+        }
+      ]
+    }
+  ],
+  "variables": {
+    "TOKEN": "",
+    "ADMIN_TOKEN": "",
+    "BASE_URL": "http://localhost:8080"
+  }
+}

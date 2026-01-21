@@ -1,0 +1,716 @@
+{
+  "info": {
+    "name": "Auditorio Backend API",
+    "description": "Colección completa de endpoints para el Sistema de Gestión de Reservas del Auditorio UNIB.E",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "🔐 Autenticación",
+      "item": [
+        {
+          "name": "1. Registrar Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\",\n  \"role\": \"ADMIN\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/auth/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Registra un nuevo usuario con rol ADMIN"
+          }
+        },
+        {
+          "name": "2. Registrar User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"usuario1\",\n  \"password\": \"user123\",\n  \"role\": \"USER\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/auth/register",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "register"
+              ]
+            },
+            "description": "Registra un nuevo usuario con rol USER"
+          }
+        },
+        {
+          "name": "3. Login Admin",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  var jsonData = pm.response.json();",
+                  "  pm.environment.set(\"ADMIN_TOKEN\", jsonData.token);",
+                  "  console.log(\"✅ Token ADMIN guardado\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login como Admin y obtiene JWT Token (guardado automáticamente)"
+          }
+        },
+        {
+          "name": "4. Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  var jsonData = pm.response.json();",
+                  "  pm.environment.set(\"USER_TOKEN\", jsonData.token);",
+                  "  console.log(\"✅ Token USER guardado\");",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"usuario1\",\n  \"password\": \"user123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/auth/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Login como User y obtiene JWT Token (guardado automáticamente)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📅 Eventos - Crear",
+      "item": [
+        {
+          "name": "5. Crear Evento (Conferencia)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USER_TOKEN}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreEvento\": \"Conferencia de Tecnología\",\n  \"descripcion\": \"Conferencia sobre innovación en software\",\n  \"fechaEvento\": \"2026-02-15\",\n  \"horaInicio\": \"09:00\",\n  \"horaFin\": \"12:00\",\n  \"numeroAsistentes\": 150,\n  \"publicoExterno\": true,\n  \"requiereRegistroPrevio\": true,\n  \"tipoDisposicion\": \"Auditorio\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/eventos",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos"
+              ]
+            },
+            "description": "Crea un nuevo evento (requiere autenticación)"
+          }
+        },
+        {
+          "name": "5b. Crear Evento (Seminario)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USER_TOKEN}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreEvento\": \"Seminario de Gestión\",\n  \"descripcion\": \"Seminario avanzado de gestión empresarial\",\n  \"fechaEvento\": \"2026-02-20\",\n  \"horaInicio\": \"14:00\",\n  \"horaFin\": \"17:00\",\n  \"numeroAsistentes\": 80,\n  \"publicoExterno\": false,\n  \"requiereRegistroPrevio\": false,\n  \"tipoDisposicion\": \"Sala de Conferencias\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/eventos",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos"
+              ]
+            },
+            "description": "Crea otro evento de ejemplo"
+          }
+        }
+      ]
+    },
+    {
+      "name": "📋 Eventos - Listar",
+      "item": [
+        {
+          "name": "6. Mis Eventos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USER_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/mis-eventos",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "mis-eventos"
+              ]
+            },
+            "description": "Lista los eventos del usuario autenticado"
+          }
+        },
+        {
+          "name": "7. Obtener Evento por ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USER_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "1"
+              ]
+            },
+            "description": "Obtiene los detalles de un evento específico por ID"
+          }
+        },
+        {
+          "name": "8. Listar TODOS los eventos (ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/eventos",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos"
+              ]
+            },
+            "description": "Solo ADMIN: Lista todos los eventos en el sistema"
+          }
+        },
+        {
+          "name": "9. Listar PENDIENTES (ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/pendientes",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "pendientes"
+              ]
+            },
+            "description": "Solo ADMIN: Lista eventos en estado PENDIENTE"
+          }
+        },
+        {
+          "name": "10. Listar RECHAZADOS (ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/rechazados",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "rechazados"
+              ]
+            },
+            "description": "Solo ADMIN: Lista eventos en estado RECHAZADO"
+          }
+        },
+        {
+          "name": "11. Listar APROBADOS (Público)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/aprobados",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "aprobados"
+              ]
+            },
+            "description": "Público (sin autenticación): Lista todos los eventos APROBADOS"
+          }
+        },
+        {
+          "name": "18. Eventos Próximos (Público)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/proximos?dias=30",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "proximos"
+              ],
+              "query": [
+                {
+                  "key": "dias",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Público (sin autenticación): Eventos aprobados en los próximos N días"
+          }
+        },
+        {
+          "name": "19. Calendario Completo (Público)",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/calendario-completo",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "calendario-completo"
+              ]
+            },
+            "description": "Público (sin autenticación): Ver calendariocon eventos aprobados y pendientes"
+          }
+        },
+        {
+          "name": "19b. Calendario con Rango de Fechas",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/calendario-completo?fechaInicio=2026-02-01&fechaFin=2026-02-28",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "calendario-completo"
+              ],
+              "query": [
+                {
+                  "key": "fechaInicio",
+                  "value": "2026-02-01"
+                },
+                {
+                  "key": "fechaFin",
+                  "value": "2026-02-28"
+                }
+              ]
+            },
+            "description": "Público: Calendario filtrado por rango de fechas"
+          }
+        }
+      ]
+    },
+    {
+      "name": "✏️ Eventos - Actualizar",
+      "item": [
+        {
+          "name": "12. Aprobar Evento (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"APROBADO\",\n  \"motivoRechazo\": null\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/1/aprobar-rechazar",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "1",
+                "aprobar-rechazar"
+              ]
+            },
+            "description": "Solo ADMIN: Aprueba un evento pendiente"
+          }
+        },
+        {
+          "name": "12b. Rechazar Evento (ADMIN)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"estado\": \"RECHAZADO\",\n  \"motivoRechazo\": \"No hay disponibilidad en esa fecha\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/1/aprobar-rechazar",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "1",
+                "aprobar-rechazar"
+              ]
+            },
+            "description": "Solo ADMIN: Rechaza un evento y proporciona un motivo"
+          }
+        },
+        {
+          "name": "13. Actualizar Evento",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USER_TOKEN}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombreEvento\": \"Conferencia de Tecnología (Actualizada)\",\n  \"descripcion\": \"Nueva descripción mejorada\",\n  \"fechaEvento\": \"2026-02-16\",\n  \"horaInicio\": \"10:00\",\n  \"horaFin\": \"13:00\",\n  \"numeroAsistentes\": 200,\n  \"publicoExterno\": true,\n  \"requiereRegistroPrevio\": false,\n  \"tipoDisposicion\": \"Auditorio Principal\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "1"
+              ]
+            },
+            "description": "Actualiza los datos de un evento (solo el propietario o ADMIN)"
+          }
+        },
+        {
+          "name": "15. Cancelar Evento",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USER_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/1/cancelar?motivo=Cambio de planes",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "1",
+                "cancelar"
+              ],
+              "query": [
+                {
+                  "key": "motivo",
+                  "value": "Cambio de planes"
+                }
+              ]
+            },
+            "description": "Cancela un evento (solo el propietario o ADMIN)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔍 Eventos - Verificar y Eliminar",
+      "item": [
+        {
+          "name": "14. Verificar Disponibilidad",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USER_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/disponibilidad?fecha=2026-02-15&horaInicio=14:00&horaFin=16:00",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "disponibilidad"
+              ],
+              "query": [
+                {
+                  "key": "fecha",
+                  "value": "2026-02-15"
+                },
+                {
+                  "key": "horaInicio",
+                  "value": "14:00"
+                },
+                {
+                  "key": "horaFin",
+                  "value": "16:00"
+                }
+              ]
+            },
+            "description": "Verifica si hay disponibilidad en la fecha y hora especificadas"
+          }
+        },
+        {
+          "name": "16. Eliminar Evento",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{USER_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "1"
+              ]
+            },
+            "description": "Elimina un evento (solo el propietario o ADMIN)"
+          }
+        },
+        {
+          "name": "17. Listar por Fecha Específica (ADMIN)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ADMIN_TOKEN}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:8080/api/eventos/fecha/2026-02-15",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "8080",
+              "path": [
+                "api",
+                "eventos",
+                "fecha",
+                "2026-02-15"
+              ]
+            },
+            "description": "Solo ADMIN: Lista todos los eventos en una fecha específica"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "ADMIN_TOKEN",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "USER_TOKEN",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:8080",
+      "type": "string"
+    }
+  ]
+}

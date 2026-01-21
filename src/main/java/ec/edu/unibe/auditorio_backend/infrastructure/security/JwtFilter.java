@@ -1,7 +1,6 @@
 package ec.edu.unibe.auditorio_backend.infrastructure.security;
 
 import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;  // <-- ESTE IMPORT FALTA
 import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -20,40 +19,27 @@ import java.util.stream.Collectors;
 public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
-    private final CustomUserDetailsService userDetailsService;
 
-    public JwtFilter(JwtUtil jwtUtil,
-                     CustomUserDetailsService userDetailsService) {
+    public JwtFilter(JwtUtil jwtUtil) {
         this.jwtUtil = jwtUtil;
-        this.userDetailsService = userDetailsService;
     }
 
     @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
-            FilterChain filterChain)
-            throws ServletException, IOException {
+            FilterChain filterChain) throws ServletException, IOException {
 
         String header = request.getHeader("Authorization");
 
         if (header != null && header.startsWith("Bearer ")) {
-
             String token = header.substring(7);
             
             try {
-                Claims claims = Jwts.parserBuilder()
-                        .setSigningKey("super-clave-ultra-secreta-super-larga-123456-mas-seguridad-para-jwt".getBytes())
-                        .build()
-                        .parseClaimsJws(token)
-                        .getBody();
-
+                Claims claims = jwtUtil.extraerClaims(token); 
                 String username = claims.getSubject();
 
-                if (username != null &&
-                    SecurityContextHolder.getContext().getAuthentication() == null) {
-
-                    // Extraer authorities del token
+                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     @SuppressWarnings("unchecked")
                     List<String> authoritiesList = claims.get("authorities", List.class);
                     
@@ -61,20 +47,13 @@ public class JwtFilter extends OncePerRequestFilter {
                             .map(SimpleGrantedAuthority::new)
                             .collect(Collectors.toList());
 
-                    // Crear authentication token con authorities
-                    UsernamePasswordAuthenticationToken auth =
-                            new UsernamePasswordAuthenticationToken(
-                                    username,
-                                    null,
-                                    authorities);
+                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                            username, null, authorities);
 
-                    auth.setDetails(
-                            new WebAuthenticationDetailsSource().buildDetails(request));
-
+                    auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 }
             } catch (Exception e) {
-                // Token inválido - continuar sin autenticación
                 logger.error("Error procesando token JWT", e);
             }
         }

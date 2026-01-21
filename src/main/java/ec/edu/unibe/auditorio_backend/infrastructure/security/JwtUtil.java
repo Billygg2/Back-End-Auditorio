@@ -1,5 +1,6 @@
 package ec.edu.unibe.auditorio_backend.infrastructure.security;
 
+import ec.edu.unibe.auditorio_backend.infrastructure.config.JwtProperties;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.security.core.GrantedAuthority;
@@ -15,23 +16,25 @@ import java.util.stream.Collectors;
 @Component
 public class JwtUtil {
 
-    private static final String SECRET_KEY = "super-clave-ultra-secreta-super-larga-123456-mas-seguridad-para-jwt";
-    private static final int EXPIRATION_TIME = 3600000; // 1 hora en milisegundos
-    private final Key key = Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
+    private final Key key;
+    private final long expirationTime;
+
+    public JwtUtil(JwtProperties jwtProperties) {
+        this.key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
+        this.expirationTime = jwtProperties.getExpiration();
+    }
 
     public String generarToken(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-        
-        // Agregar authorities/roles al token
         claims.put("authorities", userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList()));
         
         return Jwts.builder()
-                .setClaims(claims)  // Agregar claims con authorities
+                .setClaims(claims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
                 .signWith(key, SignatureAlgorithm.HS256)
                 .compact();
     }
@@ -45,7 +48,7 @@ public class JwtUtil {
         return (username.equals(userDetails.getUsername()) && !tokenExpirado(token));
     }
 
-    private Claims extraerClaims(String token) {
+    public Claims extraerClaims(String token) {
         return Jwts.parserBuilder()
                 .setSigningKey(key)
                 .build()
