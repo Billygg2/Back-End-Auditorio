@@ -10,11 +10,13 @@ import ec.edu.unibe.auditorio_backend.domain.enums.EstadoEvento;
 import ec.edu.unibe.auditorio_backend.domain.repository.EventoAuditorioRepository;
 import ec.edu.unibe.auditorio_backend.domain.repository.ResponsableRepository;
 import ec.edu.unibe.auditorio_backend.domain.repository.UsuarioRepository;
+import ec.edu.unibe.auditorio_backend.domain.repository.RequerimientoRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -23,14 +25,17 @@ public class EventoAuditorioService {
     private final EventoAuditorioRepository eventoRepository;
     private final ResponsableRepository responsableRepository;
     private final UsuarioRepository usuarioRepository;
+    private final RequerimientoRepository requerimientoRepository;
 
     public EventoAuditorioService(
             EventoAuditorioRepository eventoRepository,
             ResponsableRepository responsableRepository,
-            UsuarioRepository usuarioRepository) {
+            UsuarioRepository usuarioRepository,
+            RequerimientoRepository requerimientoRepository) {
         this.eventoRepository = eventoRepository;
         this.responsableRepository = responsableRepository;
         this.usuarioRepository = usuarioRepository;
+        this.requerimientoRepository = requerimientoRepository;
     }
 
     @Transactional
@@ -40,8 +45,9 @@ public class EventoAuditorioService {
         evento.setUsuarioSolicitante(usuario);
         evento.setEstado(EstadoEvento.PENDIENTE);
         
+        // Verificar disponibilidad considerando eventos APROBADOS y PENDIENTES
         if (!verificarDisponibilidad(evento.getFechaEvento(), evento.getHoraInicio(), evento.getHoraFin())) {
-            throw new RuntimeException("Ya existe un evento APROBADO en ese horario");
+            throw new RuntimeException("Ya existe un evento (APROBADO o PENDIENTE) en ese horario. Por favor, seleccione otra fecha u horario.");
         }
 
         if (evento.getResponsable() != null && evento.getResponsable().getId() == null) {
@@ -99,8 +105,16 @@ public class EventoAuditorioService {
         }
         
         if (aprobacionDTO.getEstado() == EstadoEvento.APROBADO) {
-            if (!verificarDisponibilidad(evento.getFechaEvento(), evento.getHoraInicio(), evento.getHoraFin())) {
-                throw new RuntimeException("No se puede aprobar: Ya existe un evento APROBADO en ese horario");
+            // Al aprobar, verificar solo conflictos con otros eventos APROBADOS
+            // (no verificar pendientes porque este evento está cambiando de pendiente a aprobado)
+            boolean conflictoAprobados = eventoRepository.tieneConflictoHorario(
+                evento.getFechaEvento(), 
+                evento.getHoraInicio(), 
+                evento.getHoraFin()
+            );
+            
+            if (conflictoAprobados) {
+                throw new RuntimeException("No se puede aprobar: Ya existe otro evento APROBADO en ese horario");
             }
         }
         
@@ -134,8 +148,33 @@ public class EventoAuditorioService {
         return eventoRepository.findByFechaEvento(fecha);
     }
 
+    /**
+     * ACTUALIZADO: Verifica disponibilidad considerando eventos APROBADOS y PENDIENTES
+     * No se puede crear un evento si hay conflicto de horario con eventos aprobados o pendientes
+     */
     public boolean verificarDisponibilidad(LocalDate fecha, LocalTime horaInicio, LocalTime horaFin) {
-        return !eventoRepository.tieneConflictoHorario(fecha, horaInicio, horaFin);
+        // Buscar eventos APROBADOS con conflicto de horario
+        boolean conflictoAprobados = eventoRepository.tieneConflictoHorario(fecha, horaInicio, horaFin);
+        
+        // Buscar eventos PENDIENTES con conflicto de horario
+        List<EventoAuditorio> eventosPendientes = eventoRepository.findByEstado(EstadoEvento.PENDIENTE);
+        boolean conflictoPendientes = eventosPendientes.stream()
+            .filter(e -> e.getFechaEvento().equals(fecha))
+            .anyMatch(e -> hayConflictoHorario(e.getHoraInicio(), e.getHoraFin(), horaInicio, horaFin));
+        
+        // Disponible solo si NO hay conflictos con aprobados NI pendientes
+        return !conflictoAprobados && !conflictoPendientes;
+    }
+    
+    /**
+     * Verifica si dos rangos de horas se solapan
+     */
+    private boolean hayConflictoHorario(LocalTime inicio1, LocalTime fin1, LocalTime inicio2, LocalTime fin2) {
+        // Conflicto si:
+        // - inicio2 está entre inicio1 y fin1, O
+        // - fin2 está entre inicio1 y fin1, O
+        // - inicio2 es antes de inicio1 Y fin2 es después de fin1 (envuelve completamente)
+        return (inicio2.isBefore(fin1) && fin2.isAfter(inicio1));
     }
 
     public boolean verificarDisponibilidad(LocalDate fecha, String horaInicio, String horaFin) {
@@ -212,11 +251,34 @@ public class EventoAuditorioService {
         responsableRepository.save(responsableExistente);
     }
 
+    /**
+     * MÉTODO CORREGIDO: Maneja correctamente la actualización de requerimientos
+     * eliminando los viejos y creando los nuevos sin duplicar
+     */
     private void actualizarRequerimientos(EventoAuditorio evento, List<Requerimiento> requerimientosNuevos) {
-        evento.getRequerimientos().clear();
-        requerimientosNuevos.forEach(req -> {
-            req.setEvento(evento);
-            evento.getRequerimientos().add(req);
-        });
+        // 1. Eliminar todos los requerimientos existentes de la base de datos
+        if (evento.getRequerimientos() != null && !evento.getRequerimientos().isEmpty()) {
+            requerimientoRepository.deleteAll(evento.getRequerimientos());
+            evento.getRequerimientos().clear();
+        }
+        
+        // 2. Crear una nueva lista para los requerimientos
+        List<Requerimiento> nuevaLista = new ArrayList<>();
+        
+        // 3. Agregar los nuevos requerimientos
+        if (requerimientosNuevos != null) {
+            for (Requerimiento reqNuevo : requerimientosNuevos) {
+                // Crear un nuevo objeto Requerimiento sin ID
+                Requerimiento req = new Requerimiento();
+                req.setTipo(reqNuevo.getTipo());
+                req.setCantidad(reqNuevo.getCantidad());
+                req.setRequerido(reqNuevo.isRequerido());
+                req.setEvento(evento);
+                nuevaLista.add(req);
+            }
+        }
+        
+        // 4. Asignar la nueva lista al evento
+        evento.setRequerimientos(nuevaLista);
     }
 }
