@@ -76,25 +76,56 @@ public class EventoAuditorioService {
                 .orElseThrow(() -> new RuntimeException("Evento no encontrado con ID: " + id));
     }
 
+    public boolean verificarDisponibilidadParaActualizacion(Long eventoId, LocalDate fecha, LocalTime horaInicio, LocalTime horaFin) {
+    // Buscar eventos APROBADOS con conflicto de horario, excluyendo el evento actual
+    List<EventoAuditorio> eventosAprobados = eventoRepository.findByEstado(EstadoEvento.APROBADO);
+    boolean conflictoAprobados = eventosAprobados.stream()
+        .filter(e -> !e.getId().equals(eventoId)) // Excluir el evento actual
+        .filter(e -> e.getFechaEvento().equals(fecha))
+        .anyMatch(e -> hayConflictoHorario(e.getHoraInicio(), e.getHoraFin(), horaInicio, horaFin));
+    
+    // Buscar eventos PENDIENTES con conflicto de horario, excluyendo el evento actual
+    List<EventoAuditorio> eventosPendientes = eventoRepository.findByEstado(EstadoEvento.PENDIENTE);
+    boolean conflictoPendientes = eventosPendientes.stream()
+        .filter(e -> !e.getId().equals(eventoId)) // Excluir el evento actual
+        .filter(e -> e.getFechaEvento().equals(fecha))
+        .anyMatch(e -> hayConflictoHorario(e.getHoraInicio(), e.getHoraFin(), horaInicio, horaFin));
+    
+    // Disponible solo si NO hay conflictos con aprobados NI pendientes
+    return !conflictoAprobados && !conflictoPendientes;
+    }
+
     @Transactional
     public EventoAuditorio actualizarEvento(Long id, EventoAuditorio eventoActualizado, String username) {
-        EventoAuditorio eventoExistente = obtenerEventoPorId(id);
-        Usuario usuario = buscarUsuarioPorUsername(username);
-        
-        verificarPermisos(eventoExistente, usuario);
-        
-        actualizarCamposBasicos(eventoExistente, eventoActualizado);
-        
-        if (esAdmin(usuario) && eventoActualizado.getResponsable() != null) {
-            actualizarResponsable(eventoExistente, eventoActualizado.getResponsable());
-        }
-        
-        if (eventoActualizado.getRequerimientos() != null) {
-            actualizarRequerimientos(eventoExistente, eventoActualizado.getRequerimientos());
-        }
-        
-        return eventoRepository.save(eventoExistente);
+    EventoAuditorio eventoExistente = obtenerEventoPorId(id);
+    Usuario usuario = buscarUsuarioPorUsername(username);
+    
+    verificarPermisos(eventoExistente, usuario);
+    
+    // Verificar disponibilidad (excluyendo el evento actual)
+    if (!verificarDisponibilidadParaActualizacion(
+            eventoExistente.getId(),
+            eventoActualizado.getFechaEvento(), 
+            eventoActualizado.getHoraInicio(), 
+            eventoActualizado.getHoraFin())) {
+        throw new RuntimeException("Ya existe un evento (APROBADO o PENDIENTE) en ese horario. Por favor, seleccione otra fecha u horario.");
     }
+    
+    // Actualizar campos básicos
+    actualizarCamposBasicos(eventoExistente, eventoActualizado);
+    
+    // Siempre actualizar responsable si se envía (tanto ADMIN como USER pueden actualizarlo)
+    if (eventoActualizado.getResponsable() != null) {
+        actualizarResponsable(eventoExistente, eventoActualizado.getResponsable());
+    }
+    
+    // Actualizar requerimientos
+    if (eventoActualizado.getRequerimientos() != null) {
+        actualizarRequerimientos(eventoExistente, eventoActualizado.getRequerimientos());
+    }
+    
+    return eventoRepository.save(eventoExistente);
+}
 
     @Transactional
     public EventoAuditorio aprobarRechazarEvento(Long id, AprobacionEventoDTO aprobacionDTO) {

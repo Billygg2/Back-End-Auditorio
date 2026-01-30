@@ -5,17 +5,21 @@ import ec.edu.unibe.auditorio_backend.application.auth.AuthResponse;
 import ec.edu.unibe.auditorio_backend.domain.entity.Usuario;
 import ec.edu.unibe.auditorio_backend.domain.repository.UsuarioRepository;
 import ec.edu.unibe.auditorio_backend.infrastructure.security.JwtUtil;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.security.core.Authentication;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/auth")
@@ -38,22 +42,119 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody AuthRequest request) {
-        Optional<Usuario> existente = usuarioRepository.findByUsername(request.getUsername());
-
-        if (existente.isPresent()) {
-            return ResponseEntity
-                    .status(HttpStatus.BAD_REQUEST)
-                    .body("Usuario ya existe");
+    public ResponseEntity<?> register(@Valid @RequestBody AuthRequest request, BindingResult result) {
+        
+        // Validar errores de validación
+        if (result.hasErrors()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("errors", result.getFieldErrors().stream()
+                .map(error -> {
+                    Map<String, String> errorMap = new HashMap<>();
+                    errorMap.put("field", error.getField());
+                    errorMap.put("message", error.getDefaultMessage());
+                    return errorMap;
+                })
+                .collect(Collectors.toList()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
-
+        
+        // Verificar si el username (cédula) ya existe
+        Optional<Usuario> existente = usuarioRepository.findByUsername(request.getUsername());
+        if (existente.isPresent()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "La cédula ya está registrada");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+        
+        // Verificar si el correo institucional ya existe
+        Optional<Usuario> existentePorCorreo = usuarioRepository.findByCorreoInstitucional(request.getCorreoInstitucional());
+        if (existentePorCorreo.isPresent()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "El correo institucional ya está registrado");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+        
+        // Crear nuevo usuario
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setUsername(request.getUsername());
         nuevoUsuario.setPassword(passwordEncoder.encode(request.getPassword()));
         nuevoUsuario.setRole(request.getRole() != null ? request.getRole() : "USER");
+        nuevoUsuario.setNombre(request.getNombre());
+        nuevoUsuario.setApellido(request.getApellido());
+        nuevoUsuario.setCorreoInstitucional(request.getCorreoInstitucional());
+        nuevoUsuario.setTelefono(request.getTelefono());
         
         usuarioRepository.save(nuevoUsuario);
-        return ResponseEntity.ok("Usuario registrado correctamente");
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Usuario registrado correctamente");
+        response.put("username", nuevoUsuario.getUsername());
+        response.put("nombre", nuevoUsuario.getNombre());
+        response.put("apellido", nuevoUsuario.getApellido());
+        
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping("/register-admin")
+    public ResponseEntity<?> registerAdmin(@Valid @RequestBody AuthRequest request, BindingResult result) {
+        
+        // Validar errores de validación
+        if (result.hasErrors()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("errors", result.getFieldErrors().stream()
+                .map(error -> {
+                    Map<String, String> errorMap = new HashMap<>();
+                    errorMap.put("field", error.getField());
+                    errorMap.put("message", error.getDefaultMessage());
+                    return errorMap;
+                })
+                .collect(Collectors.toList()));
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+        
+        // Verificar si el username (cédula) ya existe
+        Optional<Usuario> existente = usuarioRepository.findByUsername(request.getUsername());
+        if (existente.isPresent()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "La cédula ya está registrada");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+        
+        // Verificar si el correo institucional ya existe
+        Optional<Usuario> existentePorCorreo = usuarioRepository.findByCorreoInstitucional(request.getCorreoInstitucional());
+        if (existentePorCorreo.isPresent()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "El correo institucional ya está registrado");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
+        
+        // Crear nuevo usuario con rol ADMIN (ignoramos el role del request)
+        Usuario nuevoUsuario = new Usuario();
+        nuevoUsuario.setUsername(request.getUsername());
+        nuevoUsuario.setPassword(passwordEncoder.encode(request.getPassword()));
+        nuevoUsuario.setRole("ADMIN");  // Siempre ADMIN
+        nuevoUsuario.setNombre(request.getNombre());
+        nuevoUsuario.setApellido(request.getApellido());
+        nuevoUsuario.setCorreoInstitucional(request.getCorreoInstitucional());
+        nuevoUsuario.setTelefono(request.getTelefono());
+        
+        usuarioRepository.save(nuevoUsuario);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Administrador registrado correctamente");
+        response.put("username", nuevoUsuario.getUsername());
+        response.put("nombre", nuevoUsuario.getNombre());
+        response.put("apellido", nuevoUsuario.getApellido());
+        
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")
@@ -72,9 +173,10 @@ public class AuthController {
             return ResponseEntity.ok(new AuthResponse(token));
             
         } catch (Exception e) {
-            return ResponseEntity
-                    .status(HttpStatus.UNAUTHORIZED)
-                    .body("Credenciales incorrectas");
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "Credenciales incorrectas");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
     }
 }

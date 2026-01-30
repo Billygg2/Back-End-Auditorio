@@ -117,15 +117,26 @@ public class EventoAuditorioController {
         return ResponseEntity.ok(eventoService.obtenerEventoPorId(id));
     }
 
-    @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<EventoAuditorio> actualizarEvento(
-            @PathVariable Long id,
-            @RequestBody EventoAuditorio eventoActualizado,
-            Authentication authentication) {
+@PutMapping("/{id}")
+@PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+public ResponseEntity<?> actualizarEvento(
+        @PathVariable Long id,
+        @RequestBody EventoAuditorio eventoActualizado,
+        Authentication authentication) {
+    try {
+        // Asegurarse de que el ID del path coincida con el del objeto
+        eventoActualizado.setId(id);
+        
         EventoAuditorio evento = eventoService.actualizarEvento(id, eventoActualizado, authentication.getName());
         return ResponseEntity.ok(evento);
+    } catch (RuntimeException e) {
+        Map<String, String> error = new HashMap<>();
+        error.put("error", e.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(error);
     }
+}
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
