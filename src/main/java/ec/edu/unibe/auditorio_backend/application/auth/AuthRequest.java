@@ -6,28 +6,37 @@ public class AuthRequest {
     
     @NotBlank(message = "La cédula es obligatoria")
     @Size(min = 10, max = 10, message = "La cédula debe tener 10 dígitos")
+    @Pattern(regexp = "^\\d{10}$", message = "La cédula debe contener solo números")
     private String username; // Cédula
     
     @NotBlank(message = "La contraseña es obligatoria")
+    @Size(min = 8, max = 64, message = "La contraseña debe tener entre 8 y 64 caracteres")
+    @Pattern(
+        regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9\\s])\\S{8,64}$",
+        message = "La contraseña debe incluir mayúscula, minúscula, número y símbolo"
+    )
     private String password;
     
     private String role;
     
     // Nuevos campos para registro
     @NotBlank(message = "El nombre es obligatorio")
+    @Size(min = 2, max = 100, message = "El nombre debe tener entre 2 y 100 caracteres")
+    @Pattern(regexp = "^[\\p{L}]+$", message = "El nombre debe ser una sola palabra y contener solo letras")
     private String nombre;
     
     @NotBlank(message = "El apellido es obligatorio")
+    @Size(min = 2, max = 100, message = "El apellido debe tener entre 2 y 100 caracteres")
+    @Pattern(regexp = "^[\\p{L}]+$", message = "El apellido debe ser una sola palabra y contener solo letras")
     private String apellido;
     
     @NotBlank(message = "El correo institucional es obligatorio")
     @Email(message = "Debe ser un correo electrónico válido")
-    @Pattern(regexp = "^[A-Za-z0-9._%+-]+@unibe\\.edu\\.ec$", 
-             message = "El correo debe terminar en @unibe.edu.ec")
     private String correoInstitucional;
     
     @NotBlank(message = "El teléfono es obligatorio")
     @Size(min = 10, max = 10, message = "El teléfono debe tener 10 dígitos")
+    @Pattern(regexp = "^\\d{10}$", message = "El teléfono debe contener solo números")
     private String telefono;
 
     // Getters y Setters para todos los campos

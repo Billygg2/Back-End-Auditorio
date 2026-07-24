@@ -4,6 +4,6 @@ public enum EstadoEvento {
     PENDIENTE,      // Recién creado, esperando aprobación
     APROBADO,       // Aprobado por administrador
     RECHAZADO,      // Rechazado por administrador
-    CANCELADO,      // Cancelado por el solicitante
+    CANCELADO,      // Cancelado por administrador
     COMPLETADO      // Evento ya realizado
 }

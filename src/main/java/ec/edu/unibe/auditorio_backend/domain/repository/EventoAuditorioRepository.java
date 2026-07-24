@@ -3,6 +3,7 @@ package ec.edu.unibe.auditorio_backend.domain.repository;
 import ec.edu.unibe.auditorio_backend.domain.entity.EventoAuditorio;
 import ec.edu.unibe.auditorio_backend.domain.enums.EstadoEvento;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -10,13 +11,14 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
-public interface EventoAuditorioRepository extends JpaRepository<EventoAuditorio, Long> {
+public interface EventoAuditorioRepository extends JpaRepository<EventoAuditorio, Long>, JpaSpecificationExecutor<EventoAuditorio> {
     
     List<EventoAuditorio> findByFechaEvento(LocalDate fechaEvento);
     
     List<EventoAuditorio> findByUsuarioSolicitanteId(Long usuarioId);
 
     List<EventoAuditorio> findByEstado(EstadoEvento estado);
+
     
     List<EventoAuditorio> findByFechaEventoAndEstado(LocalDate fechaEvento, EstadoEvento estado);
     

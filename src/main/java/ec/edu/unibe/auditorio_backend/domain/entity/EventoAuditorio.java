@@ -8,8 +8,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.fasterxml.jackson.annotation.JsonBackReference;
+
 
 @Entity
 @Table(name = "eventos_auditorio")
@@ -30,7 +29,6 @@ public class EventoAuditorio {
     
     @Column(nullable = false)
     @NotNull(message = "La fecha del evento es obligatoria")
-    @FutureOrPresent(message = "La fecha debe ser hoy o en el futuro")
     private LocalDate fechaEvento;        
     
     @Column(nullable = false)
@@ -63,21 +61,21 @@ public class EventoAuditorio {
     private EstadoEvento estado = EstadoEvento.PENDIENTE;
 
     @ManyToOne
-@JoinColumn(name = "responsable_id", nullable = false)
-@NotNull(message = "El responsable es obligatorio")
-@JsonIgnoreProperties({"eventos"})
-private Responsable responsable;
+    @JoinColumn(name = "responsable_id", nullable = false)
+    @NotNull(message = "El responsable es obligatorio")
+    @JsonIgnoreProperties({"eventos"})
+    private Responsable responsable;
 
-@OneToMany(mappedBy = "evento", cascade = CascadeType.ALL)
-@Valid
-@JsonIgnoreProperties({"evento"})
-private List<Requerimiento> requerimientos;
+    @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL)
+    @Valid
+    @JsonIgnoreProperties({"evento"})
+    private List<Requerimiento> requerimientos;
 
-@ManyToOne
-@JoinColumn(name = "usuario_solicitante_id", nullable = false)
-@NotNull(message = "El usuario solicitante es obligatorio")
-@JsonIgnoreProperties({"password", "role", "eventosSolicitados"})
-private Usuario usuarioSolicitante;
+    @ManyToOne
+    @JoinColumn(name = "usuario_solicitante_id", nullable = false)
+    @NotNull(message = "El usuario solicitante es obligatorio")
+    @JsonIgnoreProperties({"password", "role", "eventosSolicitados"})
+    private Usuario usuarioSolicitante;
 
     @Column(length = 500)
     @Size(max = 500, message = "El motivo de rechazo no puede exceder 500 caracteres")

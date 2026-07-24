@@ -3,6 +3,7 @@ package ec.edu.unibe.auditorio_backend.application.controller;
 import ec.edu.unibe.auditorio_backend.application.auth.AuthRequest;
 import ec.edu.unibe.auditorio_backend.application.auth.AuthResponse;
 import ec.edu.unibe.auditorio_backend.domain.entity.Usuario;
+import ec.edu.unibe.auditorio_backend.domain.enums.RolUsuario;
 import ec.edu.unibe.auditorio_backend.domain.repository.UsuarioRepository;
 import ec.edu.unibe.auditorio_backend.infrastructure.security.JwtUtil;
 import jakarta.validation.Valid;
@@ -76,12 +77,23 @@ public class AuthController {
             response.put("error", "El correo institucional ya está registrado");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
+
+        Optional<Usuario> existentePorTelefono = usuarioRepository.findByTelefono(request.getTelefono());
+        if (existentePorTelefono.isPresent()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "El número de teléfono ya está registrado");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
         
         // Crear nuevo usuario
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setUsername(request.getUsername());
         nuevoUsuario.setPassword(passwordEncoder.encode(request.getPassword()));
-        nuevoUsuario.setRole(request.getRole() != null ? request.getRole() : "USER");
+        nuevoUsuario.setRole(
+                request.getRole() != null && !request.getRole().isBlank()
+                        ? RolUsuario.valueOf(request.getRole().toUpperCase())
+                        : RolUsuario.USER);
         nuevoUsuario.setNombre(request.getNombre());
         nuevoUsuario.setApellido(request.getApellido());
         nuevoUsuario.setCorreoInstitucional(request.getCorreoInstitucional());
@@ -134,12 +146,20 @@ public class AuthController {
             response.put("error", "El correo institucional ya está registrado");
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
         }
+
+        Optional<Usuario> existentePorTelefono = usuarioRepository.findByTelefono(request.getTelefono());
+        if (existentePorTelefono.isPresent()) {
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("error", "El número de teléfono ya está registrado");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
         
         // Crear nuevo usuario con rol ADMIN (ignoramos el role del request)
         Usuario nuevoUsuario = new Usuario();
         nuevoUsuario.setUsername(request.getUsername());
         nuevoUsuario.setPassword(passwordEncoder.encode(request.getPassword()));
-        nuevoUsuario.setRole("ADMIN");  // Siempre ADMIN
+        nuevoUsuario.setRole(RolUsuario.ADMIN);  // Siempre ADMIN
         nuevoUsuario.setNombre(request.getNombre());
         nuevoUsuario.setApellido(request.getApellido());
         nuevoUsuario.setCorreoInstitucional(request.getCorreoInstitucional());
@@ -170,7 +190,19 @@ public class AuthController {
             UserDetails userDetails = (UserDetails) authentication.getPrincipal();
             String token = jwtUtil.generarToken(userDetails);
 
-            return ResponseEntity.ok(new AuthResponse(token));
+            Usuario usuario = usuarioRepository.findByUsername(request.getUsername())
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+            return ResponseEntity.ok(new AuthResponse(
+                    token,
+                    usuario.getUsername(),
+                    usuario.getNombre(),
+                    usuario.getApellido(),
+                    usuario.getRole(),
+                    usuario.getCorreoInstitucional(),
+                    usuario.getTelefono(),
+                    usuario.isActivo(),
+                    usuario.isDebeCambiarPassword()));
             
         } catch (Exception e) {
             Map<String, Object> response = new HashMap<>();
