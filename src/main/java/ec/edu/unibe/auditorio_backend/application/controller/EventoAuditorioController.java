@@ -76,8 +76,11 @@ public class EventoAuditorioController {
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
-    public ResponseEntity<EventoAuditorio> obtenerEventoPorId(@PathVariable Long id) {
-        return ResponseEntity.ok(eventoService.obtenerEventoPorId(id));
+    public ResponseEntity<EventoAuditorio> obtenerEventoPorId(
+            @PathVariable Long id,
+            Authentication authentication) {
+        return ResponseEntity.ok(
+                eventoService.obtenerEventoPorIdAutorizado(id, authentication.getName()));
     }
 
     @PostMapping

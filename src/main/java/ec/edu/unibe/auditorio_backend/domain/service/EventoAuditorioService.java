@@ -11,6 +11,7 @@ import ec.edu.unibe.auditorio_backend.domain.repository.UsuarioRepository;
 import jakarta.annotation.PostConstruct;
 import jakarta.transaction.Transactional;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.scheduling.annotation.Scheduled; // ← NUEVO IMPORT
 import org.springframework.stereotype.Service;
 import org.springframework.data.domain.Page;
@@ -24,6 +25,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Locale;
+import java.util.NoSuchElementException;
 
 @Service
 public class EventoAuditorioService {
@@ -239,7 +241,14 @@ public class EventoAuditorioService {
 
     public EventoAuditorio obtenerEventoPorId(Long id) {
         return eventoRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Evento no encontrado con ID: " + id));
+                .orElseThrow(() -> new NoSuchElementException("Evento no encontrado con ID: " + id));
+    }
+
+    public EventoAuditorio obtenerEventoPorIdAutorizado(Long id, String username) {
+        EventoAuditorio evento = obtenerEventoPorId(id);
+        Usuario usuario = buscarUsuarioPorUsername(username);
+        verificarPermisos(evento, usuario);
+        return evento;
     }
 
     public List<EventoAuditorio> obtenerEventosProximos(int dias) {
@@ -265,7 +274,7 @@ public class EventoAuditorioService {
         boolean esAdmin = esAdmin(usuario);
 
         if (!esSolicitante && !esAdmin) {
-            throw new RuntimeException("No tiene permiso para realizar esta acción en este evento");
+            throw new AccessDeniedException("No tiene permiso para consultar o modificar este evento");
         }
     }
 
