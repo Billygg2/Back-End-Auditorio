@@ -1,17 +1,17 @@
 server:
-  port: 8081
+  port: ${PORT:8081}
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/auditorio_unibe
-    username: postgres
-    password: 123
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/auditorio_unibe}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:123}
     driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: ${SHOW_SQL:false}
     properties:
       hibernate:
         format_sql: true
@@ -22,8 +22,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: auditoriounibe@gmail.com
-    password: "inkk jodh nuth vjao"
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
@@ -34,11 +34,9 @@ spring:
 
 app:
   mail:
-    enabled: true
-    from: auditoriounibe@gmail.com
+    enabled: ${MAIL_ENABLED:true}
+    from: ${MAIL_USERNAME}
 
-# Por motivo de desarrollo se deja la clave por defecto para su funcionamiento, pero en produccion se debe definir la variable 
-#                                                         de entorno JWT_SECRET
 jwt:
-  secret: ${JWT_SECRET:super-clave-ultra-secreta-super-larga-123456-mas-seguridad-para-jwt}
+  secret: ${JWT_SECRET}
   expiration: 3600000
