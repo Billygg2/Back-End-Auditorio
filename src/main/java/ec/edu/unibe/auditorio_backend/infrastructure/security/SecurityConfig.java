@@ -47,26 +47,34 @@ public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 @Bean
 public CorsConfigurationSource corsConfigurationSource() {
     CorsConfiguration configuration = new CorsConfiguration();
-    
-    // AGREGAR localhost:4200
+
     configuration.setAllowedOrigins(List.of(
-        "http://localhost:4200",  
-        "http://localhost:3000", 
-        "http://localhost:8080"
+        "http://localhost:4200",
+        "http://localhost:3000",
+        "http://localhost:8080",
+        "https://front-auditorio.vercel.app"
     ));
-    
-    // AGREGAR PATCH a los métodos permitidos
-    configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-    configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With"));
-    configuration.setExposedHeaders(List.of("Authorization", "Content-Type"));
+
+    configuration.setAllowedMethods(
+        Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
+    );
+
+    configuration.setAllowedHeaders(
+        Arrays.asList("Authorization", "Content-Type", "Accept", "X-Requested-With")
+    );
+
+    configuration.setExposedHeaders(
+        List.of("Authorization", "Content-Type")
+    );
+
     configuration.setAllowCredentials(true);
-    configuration.setMaxAge(3600L); 
-    
+    configuration.setMaxAge(3600L);
+
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
+
     return source;
 }
-
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
