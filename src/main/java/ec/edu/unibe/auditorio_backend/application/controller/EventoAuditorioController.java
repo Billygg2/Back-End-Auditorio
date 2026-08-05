@@ -17,7 +17,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/eventos")
-@CrossOrigin(origins = "http://localhost:4200", maxAge = 3600)
 public class EventoAuditorioController {
 
     private final EventoAuditorioService eventoService;

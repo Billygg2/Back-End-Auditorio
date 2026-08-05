@@ -10,7 +10,6 @@ import java.time.LocalTime;
 
 @RestController
 @RequestMapping("/api/disponibilidad")
-@CrossOrigin(origins = "http://localhost:4200", maxAge = 3600)
 public class DisponibilidadController {
 
     private final DisponibilidadService disponibilidadService;

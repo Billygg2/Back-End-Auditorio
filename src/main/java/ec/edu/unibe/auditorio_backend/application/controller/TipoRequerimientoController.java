@@ -13,7 +13,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/tipos-requerimiento")
-@CrossOrigin(origins = "http://localhost:4200", maxAge = 3600)
 public class TipoRequerimientoController {
 
     private final TipoRequerimientoService service;
