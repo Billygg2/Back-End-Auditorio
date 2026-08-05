@@ -52,7 +52,7 @@ public CorsConfigurationSource corsConfigurationSource() {
         "http://localhost:4200",
         "http://localhost:3000",
         "http://localhost:8080",
-        "https://front-auditorio.vercel.app"
+        "https://front-auditorio-kappa.vercel.app"
     ));
 
     configuration.setAllowedMethods(
