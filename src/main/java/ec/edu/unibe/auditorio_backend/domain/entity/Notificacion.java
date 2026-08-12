@@ -4,6 +4,7 @@ import ec.edu.unibe.auditorio_backend.domain.enums.TipoNotificacion;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 @Entity
 @Table(name = "notificaciones", indexes = {
@@ -11,6 +12,8 @@ import java.time.LocalDateTime;
         @Index(name = "idx_notificacion_creada", columnList = "creada_en")
 })
 public class Notificacion {
+
+    private static final ZoneId ZONA_ECUADOR = ZoneId.of("America/Guayaquil");
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,7 +46,7 @@ public class Notificacion {
     @PrePersist
     public void antesDeGuardar() {
         if (creadaEn == null) {
-            creadaEn = LocalDateTime.now();
+            creadaEn = LocalDateTime.now(ZONA_ECUADOR);
         }
     }
 

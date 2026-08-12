@@ -2,18 +2,16 @@ package ec.edu.unibe.auditorio_backend.domain.service;
 
 import ec.edu.unibe.auditorio_backend.domain.entity.EventoAuditorio;
 import ec.edu.unibe.auditorio_backend.domain.entity.Usuario;
-import jakarta.mail.MessagingException;
-import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.MailException;
-import org.springframework.mail.javamail.JavaMailSender;
-import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
-import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Map;
 
 @Service
 public class CorreoReservaService {
@@ -22,17 +20,23 @@ public class CorreoReservaService {
     private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter HORA = DateTimeFormatter.ofPattern("HH:mm");
 
-    private final JavaMailSender mailSender;
+    private final RestClient clienteBrevo;
     private final boolean habilitado;
+    private final String apiKey;
     private final String remitente;
+    private final String nombreRemitente;
 
     public CorreoReservaService(
-            JavaMailSender mailSender,
+            RestClient.Builder restClientBuilder,
             @Value("${app.mail.enabled:false}") boolean habilitado,
-            @Value("${app.mail.from:}") String remitente) {
-        this.mailSender = mailSender;
+            @Value("${app.mail.api-key:}") String apiKey,
+            @Value("${app.mail.from:}") String remitente,
+            @Value("${app.mail.from-name:UNIB.E Reservas}") String nombreRemitente) {
+        this.clienteBrevo = restClientBuilder.baseUrl("https://api.brevo.com/v3").build();
         this.habilitado = habilitado;
+        this.apiKey = apiKey;
         this.remitente = remitente;
+        this.nombreRemitente = nombreRemitente;
     }
 
     public void enviarCambioEstado(EventoAuditorio evento) {
@@ -47,18 +51,11 @@ public class CorreoReservaService {
             return;
         }
 
-        try {
-            MimeMessage mensaje = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mensaje, false, StandardCharsets.UTF_8.name());
-            helper.setFrom(remitente);
-            helper.setTo(evento.getUsuarioSolicitante().getCorreoInstitucional());
-            helper.setSubject("Actualizacion de su reserva: " + evento.getNombreEvento());
-            helper.setText(construirContenido(evento), true);
-            mailSender.send(mensaje);
-        } catch (MailException | MessagingException ex) {
-            // Un fallo SMTP no debe deshacer el cambio de estado ya confirmado.
-            LOGGER.error("No se pudo enviar la notificacion del evento {}", evento.getId(), ex);
-        }
+        enviar(
+                evento.getUsuarioSolicitante().getCorreoInstitucional(),
+                "Actualización de su reserva: " + evento.getNombreEvento(),
+                construirContenido(evento),
+                "la notificación del evento " + evento.getId());
     }
 
     public void enviarNuevaReserva(EventoAuditorio evento, Usuario administrador) {
@@ -73,20 +70,36 @@ public class CorreoReservaService {
             return;
         }
 
+        enviar(
+                administrador.getCorreoInstitucional(),
+                "Nueva reserva pendiente: " + evento.getNombreEvento(),
+                construirNuevaReserva(evento, administrador),
+                "la nueva reserva " + evento.getId() + " al administrador " + administrador.getUsername());
+    }
+
+    private void enviar(String destinatario, String asunto, String contenidoHtml, String referencia) {
+        if (apiKey.isBlank() || remitente.isBlank()) {
+            LOGGER.error("Correo habilitado, pero faltan BREVO_API_KEY o MAIL_FROM. No se pudo enviar {}", referencia);
+            return;
+        }
+
+        Map<String, Object> solicitud = Map.of(
+                "sender", Map.of("name", nombreRemitente, "email", remitente),
+                "to", List.of(Map.of("email", destinatario)),
+                "subject", asunto,
+                "htmlContent", contenidoHtml);
+
         try {
-            MimeMessage mensaje = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(mensaje, false, StandardCharsets.UTF_8.name());
-            helper.setFrom(remitente);
-            helper.setTo(administrador.getCorreoInstitucional());
-            helper.setSubject("Nueva reserva pendiente: " + evento.getNombreEvento());
-            helper.setText(construirNuevaReserva(evento, administrador), true);
-            mailSender.send(mensaje);
-        } catch (MailException | MessagingException ex) {
-            LOGGER.error(
-                    "No se pudo enviar la nueva reserva {} al administrador {}",
-                    evento.getId(),
-                    administrador.getUsername(),
-                    ex);
+            clienteBrevo.post()
+                    .uri("/smtp/email")
+                    .header("api-key", apiKey)
+                    .body(solicitud)
+                    .retrieve()
+                    .toBodilessEntity();
+            LOGGER.info("Correo enviado mediante Brevo: {}", referencia);
+        } catch (RestClientException ex) {
+            // El fallo del proveedor no deshace una operación ya confirmada.
+            LOGGER.error("No se pudo enviar {} mediante Brevo", referencia, ex);
         }
     }
 
