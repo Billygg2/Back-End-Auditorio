@@ -45,7 +45,13 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> conflicto(DataIntegrityViolationException exception) {
+        String detalle = exception.getMostSpecificCause().getMessage();
+        String detalleNormalizado = detalle == null ? "" : detalle.toLowerCase();
+        String mensaje = detalleNormalizado.contains("duplicate key")
+                || detalleNormalizado.contains("unique constraint")
+                ? "La información ingresada ya se encuentra registrada"
+                : "No se puede completar la operación porque existen registros relacionados";
         return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("error", "La información ingresada ya pertenece a otra cuenta"));
+                .body(Map.of("error", mensaje));
     }
 }

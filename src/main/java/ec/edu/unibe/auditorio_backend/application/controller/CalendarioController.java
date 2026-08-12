@@ -24,13 +24,20 @@ public class CalendarioController {
     @GetMapping("/completo")
     public ResponseEntity<Map<String, List<EventoAuditorio>>> listarEventosCalendarioCompleto(
             @RequestParam(required = false) LocalDate fechaInicio,
-            @RequestParam(required = false) LocalDate fechaFin) {
+            @RequestParam(required = false) LocalDate fechaFin,
+            @RequestParam(required = false) Long espacioId) {
 
-        List<EventoAuditorio> aprobados = eventoService.listarEventosPorEstado(EstadoEvento.APROBADO);
+        List<EventoAuditorio> aprobados = espacioId == null
+                ? eventoService.listarEventosPorEstado(EstadoEvento.APROBADO)
+                : eventoService.listarEventosPorEstadoYEspacio(EstadoEvento.APROBADO, espacioId);
 
-        List<EventoAuditorio> pendientes = eventoService.listarEventosPorEstado(EstadoEvento.PENDIENTE);
+        List<EventoAuditorio> pendientes = espacioId == null
+                ? eventoService.listarEventosPorEstado(EstadoEvento.PENDIENTE)
+                : eventoService.listarEventosPorEstadoYEspacio(EstadoEvento.PENDIENTE, espacioId);
 
-        List<EventoAuditorio> completados = eventoService.listarEventosPorEstado(EstadoEvento.COMPLETADO);
+        List<EventoAuditorio> completados = espacioId == null
+                ? eventoService.listarEventosPorEstado(EstadoEvento.COMPLETADO)
+                : eventoService.listarEventosPorEstadoYEspacio(EstadoEvento.COMPLETADO, espacioId);
 
         if (fechaInicio != null && fechaFin != null) {
 
@@ -67,7 +74,10 @@ public class CalendarioController {
 
     @GetMapping("/fecha/{fecha}")
     public ResponseEntity<List<EventoAuditorio>> listarEventosPorFecha(
-            @PathVariable LocalDate fecha) {
-        return ResponseEntity.ok(eventoService.listarEventosPorFecha(fecha));
+            @PathVariable LocalDate fecha,
+            @RequestParam(required = false) Long espacioId) {
+        return ResponseEntity.ok(espacioId == null
+                ? eventoService.listarEventosPorFecha(fecha)
+                : eventoService.listarEventosPorFechaYEspacio(fecha, espacioId));
     }
 }

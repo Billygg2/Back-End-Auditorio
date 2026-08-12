@@ -1,53 +1,64 @@
 package ec.edu.unibe.auditorio_backend.domain.service;
 
-import ec.edu.unibe.auditorio_backend.domain.entity.EventoAuditorio;
-import ec.edu.unibe.auditorio_backend.domain.enums.EstadoEvento;
 import ec.edu.unibe.auditorio_backend.domain.repository.EventoAuditorioRepository;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.util.List;
 
 @Service
 public class DisponibilidadService {
 
-    private final EventoAuditorioRepository eventoRepository;
+    private static final int MINUTOS_PREPARACION = 60;
 
-    public DisponibilidadService(EventoAuditorioRepository eventoRepository) {
+    private final EventoAuditorioRepository eventoRepository;
+    private final EspacioService espacioService;
+
+    public DisponibilidadService(
+            EventoAuditorioRepository eventoRepository,
+            EspacioService espacioService) {
         this.eventoRepository = eventoRepository;
+        this.espacioService = espacioService;
+    }
+
+    /**
+     * El bloqueo se libera automáticamente al confirmar o revertir la
+     * transacción que realiza la reserva.
+     */
+    public void bloquearFecha(LocalDate fecha) {
+        eventoRepository.bloquearFechaParaReserva(fecha.toEpochDay());
     }
 
     public boolean verificarDisponibilidad(LocalDate fecha, LocalTime horaInicio, LocalTime horaFin) {
-        boolean conflictoAprobados = eventoRepository.tieneConflictoHorario(fecha, horaInicio, horaFin);
-
-        boolean conflictoPendientes = eventoRepository.findByEstado(EstadoEvento.PENDIENTE).stream()
-                .filter(e -> e.getFechaEvento().equals(fecha))
-                .anyMatch(e -> hayConflictoHorario(e.getHoraInicio(), e.getHoraFin(), horaInicio, horaFin));
-
-        return !conflictoAprobados && !conflictoPendientes;
+        return verificarDisponibilidad(
+                espacioService.obtenerPredeterminado().getId(),
+                fecha,
+                horaInicio,
+                horaFin);
     }
 
-    public boolean verificarDisponibilidadParaActualizacion(Long eventoId, LocalDate fecha,
-            LocalTime horaInicio, LocalTime horaFin) {
-
-        List<EventoAuditorio> eventosAprobados = eventoRepository.findByEstado(EstadoEvento.APROBADO);
-        boolean conflictoAprobados = eventosAprobados.stream()
-                .filter(e -> !e.getId().equals(eventoId))
-                .filter(e -> e.getFechaEvento().equals(fecha))
-                .anyMatch(e -> hayConflictoHorario(e.getHoraInicio(), e.getHoraFin(), horaInicio, horaFin));
-
-        List<EventoAuditorio> eventosPendientes = eventoRepository.findByEstado(EstadoEvento.PENDIENTE);
-        boolean conflictoPendientes = eventosPendientes.stream()
-                .filter(e -> !e.getId().equals(eventoId))
-                .filter(e -> e.getFechaEvento().equals(fecha))
-                .anyMatch(e -> hayConflictoHorario(e.getHoraInicio(), e.getHoraFin(), horaInicio, horaFin));
-
-        return !conflictoAprobados && !conflictoPendientes;
+    public boolean verificarDisponibilidad(
+            Long espacioId,
+            LocalDate fecha,
+            LocalTime horaInicio,
+            LocalTime horaFin) {
+        espacioService.obtenerActivo(espacioId);
+        LocalTime inicioConPreparacion = horaInicio.minusMinutes(MINUTOS_PREPARACION);
+        LocalTime finConPreparacion = horaFin.plusMinutes(MINUTOS_PREPARACION);
+        return !eventoRepository.tieneConflictoHorarioEnEspacio(
+                espacioId, fecha, inicioConPreparacion, finConPreparacion, null);
     }
 
-    public boolean hayConflictoHorario(LocalTime inicio1, LocalTime fin1,
-            LocalTime inicio2, LocalTime fin2) {
-        return inicio2.isBefore(fin1) && fin2.isAfter(inicio1);
+    public boolean verificarDisponibilidadParaActualizacion(
+            Long eventoId,
+            Long espacioId,
+            LocalDate fecha,
+            LocalTime horaInicio,
+            LocalTime horaFin) {
+        espacioService.obtenerActivo(espacioId);
+        LocalTime inicioConPreparacion = horaInicio.minusMinutes(MINUTOS_PREPARACION);
+        LocalTime finConPreparacion = horaFin.plusMinutes(MINUTOS_PREPARACION);
+        return !eventoRepository.tieneConflictoHorarioEnEspacio(
+                espacioId, fecha, inicioConPreparacion, finConPreparacion, eventoId);
     }
 }

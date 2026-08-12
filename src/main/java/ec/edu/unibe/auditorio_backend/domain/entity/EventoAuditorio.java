@@ -7,6 +7,7 @@ import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 
@@ -46,9 +47,25 @@ public class EventoAuditorio {
     
     @Column(nullable = false)
     private boolean publicoExterno;      
+
+    @Column(length = 150)
+    @Size(max = 150, message = "El nombre de la empresa no puede exceder 150 caracteres")
+    private String empresaPublicoExterno;
+
+    @Column(nullable = false, columnDefinition = "boolean default false")
+    private boolean publicoInterno;
+
+    @Column(length = 150)
+    @Size(max = 150, message = "La carrera no puede exceder 150 caracteres")
+    private String carreraPublicoInterno;
     
     @Column(nullable = false)
     private boolean requiereRegistroPrevio; 
+
+    @ManyToOne
+    @JoinColumn(name = "espacio_id")
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private Espacio espacio;
     
     @Column(nullable = false, length = 100)
     @NotBlank(message = "El tipo de disposición es obligatorio")
@@ -81,6 +98,20 @@ public class EventoAuditorio {
     @Size(max = 500, message = "El motivo de rechazo no puede exceder 500 caracteres")
     private String motivoRechazo;
 
+    @Column(name = "documento_aprobacion_nombre", length = 255)
+    private String documentoAprobacionNombre;
+
+    @Column(name = "documento_aprobacion_tipo", length = 100)
+    private String documentoAprobacionTipo;
+
+    @Column(name = "documento_aprobacion_tamanio")
+    private Long documentoAprobacionTamanio;
+
+    @Basic(fetch = FetchType.LAZY)
+    @Column(name = "documento_aprobacion_contenido", columnDefinition = "bytea")
+    @JsonIgnore
+    private byte[] documentoAprobacionContenido;
+
     // Constructores
     public EventoAuditorio() {
         this.estado = EstadoEvento.PENDIENTE;
@@ -90,6 +121,18 @@ public class EventoAuditorio {
     @AssertTrue(message = "La hora de inicio debe ser antes de la hora de fin")
     public boolean isHorariosValidos() {
         return horaInicio != null && horaFin != null && horaInicio.isBefore(horaFin);
+    }
+
+    @AssertTrue(message = "Debe indicar la empresa cuando participa público externo")
+    public boolean isEmpresaPublicoExternoValida() {
+        return !publicoExterno
+                || (empresaPublicoExterno != null && !empresaPublicoExterno.isBlank());
+    }
+
+    @AssertTrue(message = "Debe indicar la carrera cuando participa público interno")
+    public boolean isCarreraPublicoInternoValida() {
+        return !publicoInterno
+                || (carreraPublicoInterno != null && !carreraPublicoInterno.isBlank());
     }
 
     // Getters y Setters
@@ -116,9 +159,25 @@ public class EventoAuditorio {
     
     public boolean isPublicoExterno() { return publicoExterno; }
     public void setPublicoExterno(boolean publicoExterno) { this.publicoExterno = publicoExterno; }
+
+    public String getEmpresaPublicoExterno() { return empresaPublicoExterno; }
+    public void setEmpresaPublicoExterno(String empresaPublicoExterno) {
+        this.empresaPublicoExterno = empresaPublicoExterno;
+    }
+
+    public boolean isPublicoInterno() { return publicoInterno; }
+    public void setPublicoInterno(boolean publicoInterno) { this.publicoInterno = publicoInterno; }
+
+    public String getCarreraPublicoInterno() { return carreraPublicoInterno; }
+    public void setCarreraPublicoInterno(String carreraPublicoInterno) {
+        this.carreraPublicoInterno = carreraPublicoInterno;
+    }
     
     public boolean isRequiereRegistroPrevio() { return requiereRegistroPrevio; }
     public void setRequiereRegistroPrevio(boolean requiereRegistroPrevio) { this.requiereRegistroPrevio = requiereRegistroPrevio; }
+
+    public Espacio getEspacio() { return espacio; }
+    public void setEspacio(Espacio espacio) { this.espacio = espacio; }
     
     public String getTipoDisposicion() { return tipoDisposicion; }
     public void setTipoDisposicion(String tipoDisposicion) { this.tipoDisposicion = tipoDisposicion; }
@@ -137,4 +196,18 @@ public class EventoAuditorio {
     
     public String getMotivoRechazo() { return motivoRechazo; }
     public void setMotivoRechazo(String motivoRechazo) { this.motivoRechazo = motivoRechazo; }
+
+    public String getDocumentoAprobacionNombre() { return documentoAprobacionNombre; }
+    public void setDocumentoAprobacionNombre(String nombre) { this.documentoAprobacionNombre = nombre; }
+    public String getDocumentoAprobacionTipo() { return documentoAprobacionTipo; }
+    public void setDocumentoAprobacionTipo(String tipo) { this.documentoAprobacionTipo = tipo; }
+    public Long getDocumentoAprobacionTamanio() { return documentoAprobacionTamanio; }
+    public void setDocumentoAprobacionTamanio(Long tamanio) { this.documentoAprobacionTamanio = tamanio; }
+    @JsonIgnore
+    public byte[] getDocumentoAprobacionContenido() { return documentoAprobacionContenido; }
+    @JsonIgnore
+    public void setDocumentoAprobacionContenido(byte[] contenido) { this.documentoAprobacionContenido = contenido; }
+    public boolean isTieneDocumentoAprobacion() {
+        return documentoAprobacionContenido != null && documentoAprobacionContenido.length > 0;
+    }
 }

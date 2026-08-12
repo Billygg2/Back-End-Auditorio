@@ -3,6 +3,7 @@ package ec.edu.unibe.auditorio_backend.application.controller;
 import ec.edu.unibe.auditorio_backend.domain.entity.TipoRequerimientoEntity;
 import ec.edu.unibe.auditorio_backend.domain.service.TipoRequerimientoService;
 import ec.edu.unibe.auditorio_backend.application.dto.PaginaDTO;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -52,7 +53,7 @@ public class TipoRequerimientoController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<?> crear(@RequestBody TipoRequerimientoEntity tipo) {
+    public ResponseEntity<?> crear(@Valid @RequestBody TipoRequerimientoEntity tipo) {
         try {
             return new ResponseEntity<>(service.crear(tipo), HttpStatus.CREATED);
         } catch (RuntimeException e) {
@@ -64,7 +65,7 @@ public class TipoRequerimientoController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> actualizar(
             @PathVariable Long id,
-            @RequestBody TipoRequerimientoEntity tipo) {
+            @Valid @RequestBody TipoRequerimientoEntity tipo) {
         try {
             return ResponseEntity.ok(service.actualizar(id, tipo));
         } catch (RuntimeException e) {

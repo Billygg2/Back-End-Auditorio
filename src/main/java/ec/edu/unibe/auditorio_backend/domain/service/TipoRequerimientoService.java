@@ -65,13 +65,15 @@ public class TipoRequerimientoService {
         existente.setNombre(nuevoNombre);
         existente.setDescripcion(datos.getDescripcion());
         existente.setActivo(datos.isActivo());
+        existente.setCantidadDisponible(datos.getCantidadDisponible());
         return repository.save(existente);
     }
 
     @Transactional
     public void eliminar(Long id) {
         TipoRequerimientoEntity tipo = obtenerPorId(id);
-        // Si tiene requerimientos asociados, solo desactivar
-        repository.delete(tipo);
+        // Se conserva el historial de las reservas que utilizaron el recurso.
+        tipo.setActivo(false);
+        repository.save(tipo);
     }
 }

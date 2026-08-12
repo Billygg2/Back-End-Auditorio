@@ -1,19 +1,25 @@
 package ec.edu.unibe.auditorio_backend.application.controller;
 
 import ec.edu.unibe.auditorio_backend.application.dto.AprobacionEventoDTO;
+import ec.edu.unibe.auditorio_backend.application.dto.DocumentoAprobacionDTO;
 import ec.edu.unibe.auditorio_backend.application.dto.PaginaDTO;
 import ec.edu.unibe.auditorio_backend.domain.entity.EventoAuditorio;
 import ec.edu.unibe.auditorio_backend.domain.enums.EstadoEvento;
 import ec.edu.unibe.auditorio_backend.domain.service.EventoAuditorioService;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/eventos")
@@ -49,11 +55,12 @@ public class EventoAuditorioController {
             @RequestParam(defaultValue = "5") int tamanio,
             @RequestParam(required = false) String buscar,
             @RequestParam(required = false) EstadoEvento estado,
+            @RequestParam(required = false) Long espacioId,
             Authentication authentication) {
         boolean administrador = authentication.getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
         return ResponseEntity.ok(PaginaDTO.desde(eventoService.listarPaginado(
-                authentication.getName(), administrador, buscar, estado, pagina, tamanio)));
+                authentication.getName(), administrador, buscar, estado, espacioId, pagina, tamanio)));
     }
 
     @GetMapping("/aprobados")
@@ -139,6 +146,51 @@ public class EventoAuditorioController {
             @PathVariable Long id,
             Authentication authentication) {
         eventoService.eliminarEvento(id, authentication.getName());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping(value = "/{id}/documento-aprobacion", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<EventoAuditorio> guardarDocumentoAprobacion(
+            @PathVariable Long id,
+            @RequestPart("archivo") MultipartFile archivo,
+            Authentication authentication) {
+        return ResponseEntity.ok(eventoService.guardarDocumentoAprobacion(
+                id, archivo, authentication.getName()));
+    }
+
+    @GetMapping("/{id}/documento-aprobacion")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<byte[]> descargarDocumentoAprobacion(
+            @PathVariable Long id,
+            Authentication authentication) {
+        DocumentoAprobacionDTO documento = eventoService.descargarDocumentoAprobacion(
+                id, authentication.getName());
+        MediaType tipo;
+        try {
+            tipo = MediaType.parseMediaType(documento.tipoContenido());
+        } catch (Exception exception) {
+            tipo = MediaType.APPLICATION_OCTET_STREAM;
+        }
+
+        return ResponseEntity.ok()
+                .contentType(tipo)
+                .contentLength(documento.tamanio())
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment()
+                                .filename(documento.nombre(), StandardCharsets.UTF_8)
+                                .build()
+                                .toString())
+                .body(documento.contenido());
+    }
+
+    @DeleteMapping("/{id}/documento-aprobacion")
+    @PreAuthorize("hasAnyRole('ADMIN', 'USER')")
+    public ResponseEntity<Void> eliminarDocumentoAprobacion(
+            @PathVariable Long id,
+            Authentication authentication) {
+        eventoService.eliminarDocumentoAprobacion(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 }
