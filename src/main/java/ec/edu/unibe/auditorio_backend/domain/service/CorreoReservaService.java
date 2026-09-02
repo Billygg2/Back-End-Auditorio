@@ -116,7 +116,7 @@ public class CorreoReservaService {
                 <body style="margin:0;background:#f3f6fa;font-family:Arial,sans-serif;color:#1C2544;">
                   <div style="max-width:620px;margin:24px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #dce4ee;">
                     <div style="background:#1C2544;padding:24px;color:#fff;border-bottom:6px solid #FECC0D;">
-                      <div style="font-size:22px;font-weight:700;">Reservas Auditorio UNIB.E</div>
+                      <div style="font-size:22px;font-weight:700;">Reservas de Espacios UNIB.E</div>
                     </div>
                     <div style="padding:28px;">
                       <p>Hola, <strong>%s</strong>.</p>
@@ -151,7 +151,7 @@ public class CorreoReservaService {
                 <body style="margin:0;background:#f3f6fa;font-family:Arial,sans-serif;color:#1C2544;">
                   <div style="max-width:620px;margin:24px auto;background:#fff;border-radius:12px;overflow:hidden;border:1px solid #dce4ee;">
                     <div style="background:#1C2544;padding:24px;color:#fff;border-bottom:6px solid #FECC0D;">
-                      <div style="font-size:22px;font-weight:700;">Nueva reserva del Auditorio UNIB.E</div>
+                      <div style="font-size:22px;font-weight:700;">Sistema de Gestión de Espacios UNIB.E</div>
                     </div>
                     <div style="padding:28px;">
                       <p>Hola, <strong>%s</strong>.</p>
